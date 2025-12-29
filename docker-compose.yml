@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14.6-bullseye
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: open_leo
+      POSTGRES_USER: bitlion
+      POSTGRES_PASSWORD: supersecret
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: redis_server
+    networks:
+      - app-network
+
+  web:
+    image: nginx:latest
+    container_name: nginx_web
+    ports:
+      - "8483:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - app_data:/var/www/openleo
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+  app:
+    image: bitlionsecurity/community:latest
+    container_name: BitlionCommunity
+    working_dir: /var/www/openleo
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - app_data:/var/www/openleo
+    networks:
+      - app-network
+    entrypoint: /usr/local/bin/init.sh
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
+  app_data:
